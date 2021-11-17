@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # coding: utf-8
+# pylint: disable=invalid-name,missing-function-docstring
 
 #
 # example:
@@ -7,7 +8,9 @@
 #
 
 import JTAGTAP
+import sys
 import XSVFDecoder
+import argparse
 
 
 class XSVFDisassembler(XSVFDecoder.XSVFDecoder):
@@ -18,11 +21,12 @@ class XSVFDisassembler(XSVFDecoder.XSVFDecoder):
     def add_arguments(p):
         """Adds the necessary arguments to the parser."""
         p.add_argument(
-            '-n', '--no_bytes',
+            '-n',
+            '--no_bytes',
             action='store_true',
-            # type=bool,
+            #    type=bool,
             help='Do not output bytes'
-                 ' (default=%(default)s)')
+            ' (default=%(default)s)')
 
     def __init__(self, args):
         XSVFDecoder.XSVFDecoder.__init__(self, args)
@@ -71,32 +75,32 @@ class XSVFDisassembler(XSVFDecoder.XSVFDecoder):
 
         :return: list of 8 byte strings
         """
-        l = []
+        bytes_list = []
         while s:
-            l.append(s[:24])
+            bytes_list.append(s[:24])
             s = s[24:]
-        return l
+        return bytes_list
 
-    def return_zeroeth(self, l):
+    def return_zeroeth(self, bytes_list):
         """
         Returns the zeroeth element of the list, right whitespace stripped,
         but avoid returning None if the result is empty.
         """
-        if l:
-            l_0 = l[0].rstrip()
+        if bytes_list:
+            l_0 = bytes_list[0].rstrip()
         else:
             l_0 = ""
         return l_0
 
-    def format_byte_list(self, l):
-        return '    {:s}'.format(' '.join('{0:02X}'.format(x) for x in l))
+    def format_byte_list(self, bytes_list):
+        return '    {:s}'.format(' '.join('{0:02X}'.format(x)
+                                          for x in bytes_list))
 
-    def pretty_disasm(self, pars=("",)):
+    def pretty_disasm(self, pars=("", )):
         l1 = self.format_first_part(self.current_instruction_string)
         l2 = list(pars)
         l2[0] = '{:s}{:s}'.format(
-            self.instruction_name(self.current_instruction),
-            l2[0])
+            self.instruction_name(self.current_instruction), l2[0])
         while l1 or l2:
             l1_0 = self.return_zeroeth(l1)
             l2_0 = self.return_zeroeth(l2)
@@ -115,31 +119,20 @@ class XSVFDisassembler(XSVFDecoder.XSVFDecoder):
         self.pretty_disasm()
 
     def disasm_xtdomask(self):
-        p = (
-            '',
-            self.format_byte_list(self.tdo_mask)
-        )
+        p = ('', self.format_byte_list(self.tdo_mask))
         self.pretty_disasm(p)
 
     def disasm_xsir(self):
-        p = (
-            ' {:d} {:s}'.format(
-                self.sirsize_bits,
-                self.format_byte_list(self.tdi).strip()),
-        )
+        p = (' {:d} {:s}'.format(self.sirsize_bits,
+                                 self.format_byte_list(self.tdi).strip()), )
         self.pretty_disasm(p)
 
     def disasm_xsdr(self):
-        p = (
-            '',
-            self.format_byte_list(self.tdi)
-        )
+        p = ('', self.format_byte_list(self.tdi))
         self.pretty_disasm(p)
 
     def disasm_xruntest(self):
-        p = (
-            ' {:d}'.format(self.runtest),
-        )
+        p = (' {:d}'.format(self.runtest), )
         self.pretty_disasm(p)
 
     def disasm_xreserved_5(self):
@@ -149,31 +142,21 @@ class XSVFDisassembler(XSVFDecoder.XSVFDecoder):
         self.pretty_disasm()
 
     def disasm_xrepeat(self):
-        p = (
-            ' {:d}'.format(self.repeat),
-        )
+        p = (' {:d}'.format(self.repeat), )
         self.pretty_disasm(p)
 
     def disasm_xsdrsize(self):
-        p = (
-            ' {0}'.format(self.sdrsize_bits),
-        )
+        p = (' {0}'.format(self.sdrsize_bits), )
         self.pretty_disasm(p)
 
     def disasm_xsdrtdo(self):
-        p = (
-            '',
-            self.format_byte_list(self.tdi) + ',',
-            self.format_byte_list(self.tdo_expected)
-        )
+        p = ('', self.format_byte_list(self.tdi) + ',',
+             self.format_byte_list(self.tdo_expected))
         self.pretty_disasm(p)
 
     def disasm_xsetsdrmasks(self):
-        p = (
-            '',
-            self.format_byte_list(self.address_mask) + ',',
-            self.format_byte_list(self.data_mask)
-        )
+        p = ('', self.format_byte_list(self.address_mask) + ',',
+             self.format_byte_list(self.data_mask))
         self.pretty_disasm(p)
 
     def disasm_xsdrinc(self):
@@ -183,8 +166,8 @@ class XSVFDisassembler(XSVFDecoder.XSVFDecoder):
             '    {:d},'.format(self.xsdrinc_num_times)
         ]
         n = self.xsdrinc_num_times
-        for l in self.xsdrinc_data_list:
-            s = self.format_byte_list(l)
+        for bytes_list in self.xsdrinc_data_list:
+            s = self.format_byte_list(bytes_list)
             n -= 1
             # Adds a comma, unless it's the last one
             if n:
@@ -193,88 +176,58 @@ class XSVFDisassembler(XSVFDecoder.XSVFDecoder):
         self.pretty_disasm(p)
 
     def disasm_xsdrb(self):
-        p = (
-            '',
-            self.format_byte_list(self.tdi)
-        )
+        p = ('', self.format_byte_list(self.tdi))
         self.pretty_disasm(p)
 
     def disasm_xsdrc(self):
-        p = (
-            '',
-            self.format_byte_list(self.tdi)
-        )
+        p = ('', self.format_byte_list(self.tdi))
         self.pretty_disasm(p)
 
     def disasm_xsdre(self):
-        p = (
-            '',
-            self.format_byte_list(self.tdi)
-        )
+        p = ('', self.format_byte_list(self.tdi))
         self.pretty_disasm(p)
 
     def disasm_xsdrtdob(self):
-        p = (
-            '',
-            self.format_byte_list(self.tdi) + ',',
-            self.format_byte_list(self.tdo_expected)
-        )
+        p = ('', self.format_byte_list(self.tdi) + ',',
+             self.format_byte_list(self.tdo_expected))
         self.pretty_disasm(p)
 
     def disasm_xsdrtdoc(self):
-        p = (
-            '',
-            self.format_byte_list(self.tdi) + ',',
-            self.format_byte_list(self.tdo_expected)
-        )
+        p = ('', self.format_byte_list(self.tdi) + ',',
+             self.format_byte_list(self.tdo_expected))
         self.pretty_disasm(p)
 
     def disasm_xsdrtdoe(self):
-        p = (
-            '',
-            self.format_byte_list(self.tdi) + ',',
-            self.format_byte_list(self.tdo_expected)
-        )
+        p = ('', self.format_byte_list(self.tdi) + ',',
+             self.format_byte_list(self.tdo_expected))
         self.pretty_disasm(p)
 
     def disasm_xstate(self):
-        p = (
-            ' {:s}'.format(JTAGTAP.JTAGTAP.state_name(self.next_state)),
-        )
+        p = (' {:s}'.format(JTAGTAP.JTAGTAP.state_name(self.next_state)), )
         self.pretty_disasm(p)
 
     def disasm_xendir(self):
-        p = (
-            ' {:s}'.format(JTAGTAP.JTAGTAP.state_name(self.endir_state)),
-        )
+        p = (' {:s}'.format(JTAGTAP.JTAGTAP.state_name(self.endir_state)), )
         self.pretty_disasm(p)
 
     def disasm_xenddr(self):
-        p = (
-            ' {:s}'.format(JTAGTAP.JTAGTAP.state_name(self.enddr_state)),
-        )
+        p = (' {:s}'.format(JTAGTAP.JTAGTAP.state_name(self.enddr_state)), )
         self.pretty_disasm(p)
 
     def disasm_xsir2(self):
-        p = (
-            ' {:d}'.format(self.sirsize_bits),
-            self.format_byte_list(self.tdi)
-        )
+        p = (' {:d}'.format(self.sirsize_bits),
+             self.format_byte_list(self.tdi))
         self.pretty_disasm(p)
 
     def disasm_xcomment(self):
-        p = (
-            ' "{:s}"'.format(self.comment),
-        )
+        p = (' "{:s}"'.format(self.comment), )
         self.pretty_disasm(p)
 
     def disasm_xwait(self):
-        p = (
-            ' {:s} {:s} {:d}'.format(
-                JTAGTAP.JTAGTAP.state_name(self.wait_start_state),
-                JTAGTAP.JTAGTAP.state_name(self.wait_end_state),
-                self.wait_time_usecs),
-        )
+        p = (' {:s} {:s} {:d}'.format(
+            JTAGTAP.JTAGTAP.state_name(self.wait_start_state),
+            JTAGTAP.JTAGTAP.state_name(self.wait_end_state),
+            self.wait_time_usecs), )
         self.pretty_disasm(p)
 
     #
@@ -284,3 +237,25 @@ class XSVFDisassembler(XSVFDecoder.XSVFDecoder):
 
     def disasm_all_files(self, fd_list):
         return self.decode_all_files(fd_list)
+
+
+def main():
+
+    my_parser2 = argparse.ArgumentParser(
+        description='XSVF file processor.',
+        epilog='Parameters can be in a file, one per line, using @"file name"',
+        fromfile_prefix_chars='@')
+
+    my_parser2.add_argument('fileName',
+                            nargs='+',
+                            type=argparse.FileType('rt'))
+
+    XSVFDisassembler.add_arguments(my_parser2)
+    args = my_parser2.parse_args()
+    d = XSVFDisassembler(args)
+    error_code = d.disasm_all_files(args.fileName)
+    sys.exit(error_code)
+
+
+if __name__ == '__main__':
+    main()

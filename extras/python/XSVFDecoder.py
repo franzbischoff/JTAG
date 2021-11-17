@@ -75,6 +75,7 @@ class XSVFDecoder(object):
         self._comment = ""
         self._instruction_counter = 0
         self._current_instruction_string = ""
+        self._current_file = None
 
     @property
     def error_code(self):
@@ -409,7 +410,7 @@ class XSVFDecoder(object):
         n = 0
         for j in range(self.sdrsize_bytes):
             b = self.data_mask[j]
-            for k in range(8):
+            for k in range(8):  # pylint: disable=unused-variable
                 if b & 1:
                     n += 1
                 b >>= 1
@@ -507,30 +508,30 @@ class XSVFDecoder(object):
     _NAME = 0
     _DECODER = 1
     _instruction_data = (
-        ('XCOMPLETE',    decode_xcomplete),
-        ('XTDOMASK',     decode_xtdomask),
-        ('XSIR',         decode_xsir),
-        ('XSDR',         decode_xsdr),
-        ('XRUNTEST',     decode_xruntest),
-        ('XRESERVED_5',  decode_xreserved_5),
-        ('XRESERVED_6',  decode_xreserved_6),
-        ('XREPEAT',      decode_xrepeat),
-        ('XSDRSIZE',     decode_xsdrsize),
-        ('XSDRTDO',      decode_xsdrtdo),
+        ('XCOMPLETE', decode_xcomplete),
+        ('XTDOMASK', decode_xtdomask),
+        ('XSIR', decode_xsir),
+        ('XSDR', decode_xsdr),
+        ('XRUNTEST', decode_xruntest),
+        ('XRESERVED_5', decode_xreserved_5),
+        ('XRESERVED_6', decode_xreserved_6),
+        ('XREPEAT', decode_xrepeat),
+        ('XSDRSIZE', decode_xsdrsize),
+        ('XSDRTDO', decode_xsdrtdo),
         ('XSETSDRMASKS', decode_xsetsdrmasks),
-        ('XSDRINC',      decode_xsdrinc),
-        ('XSDRB',        decode_xsdrb),
-        ('XSDRC',        decode_xsdrc),
-        ('XSDRE',        decode_xsdre),
-        ('XSDRTDOB',     decode_xsdrtdob),
-        ('XSDRTDOC',     decode_xsdrtdoc),
-        ('XSDRTDOE',     decode_xsdrtdoe),
-        ('XSTATE',       decode_xstate),
-        ('XENDIR',       decode_xendir),
-        ('XENDDR',       decode_xenddr),
-        ('XSIR2',        decode_xsir2),
-        ('XCOMMENT',     decode_xcomment),
-        ('XWAIT',        decode_xwait),
+        ('XSDRINC', decode_xsdrinc),
+        ('XSDRB', decode_xsdrb),
+        ('XSDRC', decode_xsdrc),
+        ('XSDRE', decode_xsdre),
+        ('XSDRTDOB', decode_xsdrtdob),
+        ('XSDRTDOC', decode_xsdrtdoc),
+        ('XSDRTDOE', decode_xsdrtdoe),
+        ('XSTATE', decode_xstate),
+        ('XENDIR', decode_xendir),
+        ('XENDDR', decode_xenddr),
+        ('XSIR2', decode_xsir2),
+        ('XCOMMENT', decode_xcomment),
+        ('XWAIT', decode_xwait),
     )
 
     @staticmethod
@@ -557,7 +558,8 @@ class XSVFDecoder(object):
     def private_next_byte(self):
         # return next(self._iter_file)
         # return XSVFDecoder.bytes_from_file(self._current_file)
-        b = ord(self._current_file.read(1))
+        by = self._current_file.read(1)
+        b = ord(by)
         self.current_instruction_string += '{0:02X} '.format(b)
         return b
 

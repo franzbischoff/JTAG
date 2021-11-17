@@ -7,14 +7,16 @@
 
 import pyparsing as pp
 import sys
+import io
 
 __all__ = ['parse_xsvf_file']
 
 # Comment
 asm_comment = pp.Suppress(pp.Group(';' + pp.restOfLine))
 optional_asm_comment = pp.Optional(asm_comment)
-xcomment_argument = pp.QuotedString(
-    quoteChar='"', escQuote='""', multiline=True)
+xcomment_argument = pp.QuotedString(quoteChar='"',
+                                    escQuote='""',
+                                    multiline=True)
 
 # Hexadecimal integers
 zero_ex = pp.Literal('0x') | pp.Literal('0X')
@@ -56,116 +58,65 @@ pause_ir = pp.Keyword('PAUSE_IR')
 exit2_ir = pp.Keyword('EXIT2_IR')
 update_ir = pp.Keyword('UPDATE_IR')
 
-state = (
-    test_logic_reset |
-    run_test_idle |
-    select_dr_scan |
-    capture_dr |
-    shift_dr |
-    exit1_dr |
-    pause_dr |
-    exit2_dr |
-    update_dr |
-    select_ir_scan |
-    capture_ir |
-    shift_ir |
-    exit1_ir |
-    pause_ir |
-    exit2_ir |
-    update_ir
-)
+state = (test_logic_reset | run_test_idle | select_dr_scan | capture_dr
+         | shift_dr | exit1_dr | pause_dr | exit2_dr | update_dr
+         | select_ir_scan | capture_ir | shift_ir | exit1_ir | pause_ir
+         | exit2_ir | update_ir)
 
 # Instructions
 xcomplete = pp.Group(pp.Keyword('XCOMPLETE'))
-xtdomask = pp.Group(pp.Keyword('XTDOMASK') + optional_asm_comment +
-                    byte_sequence)
-xsir = pp.Group(pp.Keyword('XSIR') + optional_asm_comment +
-                integer + optional_asm_comment +
-                byte_sequence)
-xsdr = pp.Group(pp.Keyword('XSDR') + optional_asm_comment +
-                byte_sequence)
-xruntest = pp.Group(pp.Keyword('XRUNTEST') + optional_asm_comment +
-                    integer)
+xtdomask = pp.Group(
+    pp.Keyword('XTDOMASK') + optional_asm_comment + byte_sequence)
+xsir = pp.Group(
+    pp.Keyword('XSIR') + optional_asm_comment + integer +
+    optional_asm_comment + byte_sequence)
+xsdr = pp.Group(pp.Keyword('XSDR') + optional_asm_comment + byte_sequence)
+xruntest = pp.Group(pp.Keyword('XRUNTEST') + optional_asm_comment + integer)
 xreserved_5 = pp.Group(pp.Keyword('XRESERVED_5'))
 xreserved_6 = pp.Group(pp.Keyword('XRESERVED_6'))
-xrepeat = pp.Group(pp.Keyword('XREPEAT') + optional_asm_comment +
-                   integer)
-xsdrsize = pp.Group(pp.Keyword('XSDRSIZE') + optional_asm_comment +
-                    integer)
-xsdrtdo = pp.Group(pp.Keyword('XSDRTDO') +
-                   byte_sequence + optional_asm_comment +
-                   comma + optional_asm_comment +
-                   byte_sequence)
-xsetsdrmasks = pp.Group(pp.Keyword('XSETSDRMASKS') + optional_asm_comment +
-                        byte_sequence + optional_asm_comment +
-                        comma + optional_asm_comment +
-                        byte_sequence)
-xsdrinc = pp.Group(pp.Keyword('XSDRINC') + optional_asm_comment +
-                   byte_sequence + optional_asm_comment +
-                   comma + optional_asm_comment +
-                   integer + optional_asm_comment +
-                   comma + optional_asm_comment +
-                   byte_sequence_list)
-xsdrb = pp.Group(pp.Keyword('XSDRB') + optional_asm_comment +
-                 byte_sequence)
-xsdrc = pp.Group(pp.Keyword('XSDRC') + optional_asm_comment +
-                 byte_sequence)
-xsdre = pp.Group(pp.Keyword('XSDRE') + optional_asm_comment +
-                 byte_sequence)
-xsdrtdob = pp.Group(pp.Keyword('XSDRTDOB') + optional_asm_comment +
-                    byte_sequence + optional_asm_comment +
-                    comma + optional_asm_comment +
-                    byte_sequence)
-xsdrtdoc = pp.Group(pp.Keyword('XSDRTDOC') + optional_asm_comment +
-                    byte_sequence + optional_asm_comment +
-                    comma + optional_asm_comment +
-                    byte_sequence)
-xsdrtdoe = pp.Group(pp.Keyword('XSDRTDOE') + optional_asm_comment +
-                    byte_sequence + optional_asm_comment +
-                    comma + optional_asm_comment +
-                    byte_sequence)
-xstate = pp.Group(pp.Keyword('XSTATE') + optional_asm_comment +
-                  state)
-xendir = pp.Group(pp.Keyword('XENDIR') + optional_asm_comment +
-                  (run_test_idle | pause_ir))
-xenddr = pp.Group(pp.Keyword('XENDDR') + optional_asm_comment +
-                  (run_test_idle | pause_dr))
-xsir2 = pp.Group(pp.Keyword('XSIR2') + optional_asm_comment +
-                 integer + optional_asm_comment +
-                 byte_sequence)
-xcomment = pp.Group(pp.Keyword('XCOMMENT') + optional_asm_comment +
-                    xcomment_argument)
-xwait = pp.Group(pp.Keyword('XWAIT') + optional_asm_comment +
-                 state + optional_asm_comment +
-                 state + optional_asm_comment +
-                 integer)
+xrepeat = pp.Group(pp.Keyword('XREPEAT') + optional_asm_comment + integer)
+xsdrsize = pp.Group(pp.Keyword('XSDRSIZE') + optional_asm_comment + integer)
+xsdrtdo = pp.Group(
+    pp.Keyword('XSDRTDO') + byte_sequence + optional_asm_comment + comma +
+    optional_asm_comment + byte_sequence)
+xsetsdrmasks = pp.Group(
+    pp.Keyword('XSETSDRMASKS') + optional_asm_comment + byte_sequence +
+    optional_asm_comment + comma + optional_asm_comment + byte_sequence)
+xsdrinc = pp.Group(
+    pp.Keyword('XSDRINC') + optional_asm_comment + byte_sequence +
+    optional_asm_comment + comma + optional_asm_comment + integer +
+    optional_asm_comment + comma + optional_asm_comment + byte_sequence_list)
+xsdrb = pp.Group(pp.Keyword('XSDRB') + optional_asm_comment + byte_sequence)
+xsdrc = pp.Group(pp.Keyword('XSDRC') + optional_asm_comment + byte_sequence)
+xsdre = pp.Group(pp.Keyword('XSDRE') + optional_asm_comment + byte_sequence)
+xsdrtdob = pp.Group(
+    pp.Keyword('XSDRTDOB') + optional_asm_comment + byte_sequence +
+    optional_asm_comment + comma + optional_asm_comment + byte_sequence)
+xsdrtdoc = pp.Group(
+    pp.Keyword('XSDRTDOC') + optional_asm_comment + byte_sequence +
+    optional_asm_comment + comma + optional_asm_comment + byte_sequence)
+xsdrtdoe = pp.Group(
+    pp.Keyword('XSDRTDOE') + optional_asm_comment + byte_sequence +
+    optional_asm_comment + comma + optional_asm_comment + byte_sequence)
+xstate = pp.Group(pp.Keyword('XSTATE') + optional_asm_comment + state)
+xendir = pp.Group(
+    pp.Keyword('XENDIR') + optional_asm_comment + (run_test_idle | pause_ir))
+xenddr = pp.Group(
+    pp.Keyword('XENDDR') + optional_asm_comment + (run_test_idle | pause_dr))
+xsir2 = pp.Group(
+    pp.Keyword('XSIR2') + optional_asm_comment + integer +
+    optional_asm_comment + byte_sequence)
+xcomment = pp.Group(
+    pp.Keyword('XCOMMENT') + optional_asm_comment + xcomment_argument)
+xwait = pp.Group(
+    pp.Keyword('XWAIT') + optional_asm_comment + state + optional_asm_comment +
+    state + optional_asm_comment + integer)
 
-instruction = (
-    xcomplete |
-    xtdomask |
-    xsir |
-    xsdr |
-    xruntest |
-    xreserved_5 |
-    xreserved_6 |
-    xrepeat |
-    xsdrsize |
-    xsdrtdo |
-    xsetsdrmasks |
-    xsdrinc |
-    xsdrb |
-    xsdrc |
-    xsdre |
-    xsdrtdob |
-    xsdrtdoc |
-    xsdrtdoe |
-    xstate |
-    xendir |
-    xenddr |
-    xsir2 |
-    xcomment |
-    xwait
-)
+instruction = (xcomplete | xtdomask | xsir | xsdr | xruntest | xreserved_5
+               | xreserved_6 | xrepeat | xsdrsize | xsdrtdo | xsetsdrmasks
+               | xsdrinc | xsdrb | xsdrc | xsdre | xsdrtdob | xsdrtdoc
+               | xsdrtdoe | xstate | xendir | xenddr | xsir2 | xcomment
+               | xwait)
 
 # Line
 line = asm_comment | (instruction + optional_asm_comment)
@@ -263,6 +214,9 @@ XCOMPLETE"""
 
 
 def main():
+    sys.stdout = io.TextIOWrapper(sys.stdout.detach(), encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.detach(), encoding='utf-8')
+
     print(xsvf_parser.parseString(xsvf_example, parseAll=True))
     sys.exit(0)
 

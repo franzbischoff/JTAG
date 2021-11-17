@@ -1,5 +1,6 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 # coding: utf-8
+# pylint: disable=invalid-name,missing-function-docstring
 
 import os
 import string
@@ -18,24 +19,24 @@ class Uploader(object):
     """
 
     # Create a translation array of printable characters
-    _printable_chars = string.printable
-    _translate_str = ''.join(
-        [(chr(x) in _printable_chars) and chr(x) or '.' for x in range(256)])
+    _translate_str = ''.join([(chr(x) in string.printable) and chr(x) or '.'
+                              for x in range(256)])
 
     @staticmethod
     def add_arguments(p):
         """Adds the necessary arguments to the parser."""
         p.add_argument(
-            '-p', '--port',
-            default='/dev/ttyACM0',
+            '-p',
+            '--port',
+            default='COM2',  # /dev/ttyACM0',
             help='Serial port device name'
-                 ' (default=%(default)s)')
-        p.add_argument(
-            '-b', '--baud',
-            default=115200,
-            type=int,
-            help='BAUD rate'
-                 ' (type %(type)s, default=%(default)s)')
+            ' (default=%(default)s)')
+        p.add_argument('-b',
+                       '--baud',
+                       default=115200,
+                       type=int,
+                       help='BAUD rate'
+                       ' (type %(type)s, default=%(default)s)')
 
     def __init__(self, args):
         self._args = args
@@ -71,14 +72,18 @@ class Uploader(object):
     def print_lf(self):
         if self._need_lf:
             self._need_lf = False
-            print
 
     def initialize_hashes(self):
         self._sum = 0
 
     def update_hashes(self, s):
+        # if isinstance(s, bytes):
         for c in s:
-            self._sum += ord(c)
+            self._sum += c
+
+    # else:
+    #     for c in s:
+    #         self._sum += ord(c)
 
     def print_hashes(self):
         cksum = (-self._sum) & 0xFF
@@ -96,7 +101,7 @@ class Uploader(object):
         self._file_size = os.fstat(fd.fileno()).st_size
         bytes_written = 0
         while True:
-            line = self._serial.readline().strip()
+            line = self._serial.readline().strip().decode("utf-8")
             if not line:
                 continue
             command = line[0]
@@ -106,11 +111,12 @@ class Uploader(object):
                 xsvf_data = fd.read(num_bytes)
                 bytes_written += len(xsvf_data)
                 self.update_hashes(xsvf_data)
-                xsvf_data += chr(0xff) * (num_bytes - len(xsvf_data))
+                xsvf_data += b'0xff' * (num_bytes - len(xsvf_data))
                 self._serial.write(xsvf_data)
                 if self._args.debug > 1:
                     print('\rSent: %8d bytes, %8d remaining' %
-                          (bytes_written, self._file_size - bytes_written), end='')
+                          (bytes_written, self._file_size - bytes_written),
+                          end='')
                     sys.stdout.flush()
                     self._need_lf = True
             elif command == 'R':

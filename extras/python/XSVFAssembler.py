@@ -1,15 +1,16 @@
 #!/usr/bin/python
 # coding: utf-8
+# pylint: disable=invalid-name,missing-function-docstring
 
 #
 # example:
 # $ ./XSVFAssembler.py > test.xsvf
 # $ ./xsvf -c disasm -n test.xsvf > test.xsvf.s
 # $ ./xsvf -c asm ../xsvf/XC2C64A/idcode_simpler.xsvf.s
-# $
+# $ sha1sum test*.xsvf
 
-import XSVFParser
 import sys
+import XSVFParser
 
 
 class XSVFAssembler(object):
@@ -67,8 +68,8 @@ class XSVFAssembler(object):
         }
         self._arguments = []
 
-    def asm_byte_sequence(self, l):
-        for c in l:
+    def asm_byte_sequence(self, bytes_list):
+        for c in bytes_list:
             if len(c) == 2:
                 b = int(c, base=16)
             else:  # len(c) == 8:
@@ -83,17 +84,17 @@ class XSVFAssembler(object):
             i = int(s)
         ret = i
         # Build a list of bytes
-        l = []
+        bytes_list = []
         n1 = n
         while n1:
             j = i % 256
-            l.append(j)
+            bytes_list.append(j)
             i >>= 8
             n1 -= 1
         # Output the list reversed (Big Endian)
         n1 = n
         while n1:
-            j = l.pop()
+            j = bytes_list.pop()
             sys.stdout.write(chr(j))
             n1 -= 1
         return ret
@@ -144,7 +145,7 @@ class XSVFAssembler(object):
         j = n
         while j:
             i = n - j
-            self.asm_byte_sequence(self._arguments[i+2])
+            self.asm_byte_sequence(self._arguments[i + 2])
             j -= 1
 
     def asm_xsdrb(self):
@@ -194,12 +195,12 @@ class XSVFAssembler(object):
         self.asm_integer(self._arguments[2], 4)
 
     def assemble_tree(self, tree):
-        for l in tree:
-            instruction = l[0]
+        for bytes_list in tree:
+            instruction = bytes_list[0]
             info = self._instruction_info[instruction]
             opcode = info[self.OPCODE]
             asm_funcion = info[self.HANDLER]
-            self._arguments = l[1:]
+            self._arguments = bytes_list[1:]
             sys.stdout.write(chr(opcode))
             asm_funcion()
         return True
@@ -220,10 +221,11 @@ class XSVFAssembler(object):
 
 def main():
     a = XSVFAssembler(None)
-    tree = XSVFParser.xsvf_parser.parseString(
-        XSVFParser.xsvf_example, parseAll=True)
+    tree = XSVFParser.xsvf_parser.parseString(XSVFParser.xsvf_example,
+                                              parseAll=True)
     a.assemble_tree(tree)
     sys.exit(0)
+
 
 if __name__ == '__main__':
     main()

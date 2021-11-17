@@ -1,42 +1,48 @@
 #!/usr/bin/python
 # coding: utf-8
+# pylint: disable=invalid-name,missing-function-docstring
 
 import argparse
+import sys
+# import io
 import XSVFAssembler
 import XSVFDisassembler
-import sys
 import Uploader
 
 my_parser = argparse.ArgumentParser(
     description='XSVF file processor.',
     epilog='Parameters can be in a file, one per line, using @"file name"',
     fromfile_prefix_chars='@')
-my_parser.add_argument(
-    '-c', '--command',
-    type=str,
-    choices=['upload', 'disasm', 'asm'],
-    default='upload',
-    help='command to execute.'
-         ' (default=%(default)s)')
-my_parser.add_argument(
-    'fileName',
-    nargs='+',
-    type=argparse.FileType('rb'),
-    help='XSVF file names.'
-         ' (type %(type)s)')
-my_parser.add_argument(
-    '-v', '--version',
-    action='version',
-    version='%(prog)s version 1.0.0')
-my_parser.add_argument(
-    '-d', '--debug',
-    default=2,
-    type=int,
-    help='Debug verbosity'
-         ' (type %(type)s, default=%(default)s)')
+
+my_parser.add_argument('-c',
+                       '--command',
+                       type=str,
+                       choices=['upload', 'disasm', 'asm'],
+                       default='upload',
+                       help='command to execute.'
+                       ' (default=%(default)s)')
+my_parser.add_argument('fileName',
+                       nargs='+',
+                       type=argparse.FileType('rt'),
+                       help='XSVF file names.'
+                       ' (type %(type)s)')
+my_parser.add_argument('-v',
+                       '--version',
+                       action='version',
+                       version='%(prog)s version 1.0.0')
+my_parser.add_argument('-d',
+                       '--debug',
+                       default=2,
+                       type=int,
+                       help='Debug verbosity'
+                       ' (type %(type)s, default=%(default)s)')
 
 
 def main():
+
+    # sys.stdout = io.TextIOWrapper(sys.stdout.detach(), encoding='utf-8')
+    # sys.stderr = io.TextIOWrapper(sys.stderr.detach(), encoding='utf-8')
+
     error_code = -1
     Uploader.Uploader.add_arguments(my_parser)
     XSVFDisassembler.XSVFDisassembler.add_arguments(my_parser)
@@ -51,7 +57,12 @@ def main():
     elif args.command == 'asm':
         a = XSVFAssembler.XSVFAssembler(args)
         error_code = a.assemble_all_files(args.fileName)
+
+    if error_code is True:
+        error_code = 0
+
     sys.exit(error_code)
+
 
 if __name__ == '__main__':
     main()
